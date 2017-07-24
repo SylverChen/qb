@@ -1,0 +1,109 @@
+
+
+
+
+* Generate queries from tpc-ds templates
+cd tools/
+./dsqgen -template query6.tpl -directory ../query_templates -dialect postgres -scale 1 -output_dir ../query
+mv ../query/query_0.sql ../query/query_6.sql
+find-file ../query/query_6.sql
+
+      
+* Setting of sql mode
+in .sql file
+M-x sql-set product
+postgres
+M-x sql-set-sqli-buffer
+*SQL*
+sql-send-region
+sql-send-buffer
+
+* Postgresql Settings
+** Normal Operations
+username: postgres
+password: 111111
+
+restart pg server:
+service postgresql restart
+
+
+** Query log
+*** Open logs
+ls -lh /sudo:root@localhost:/var/lib/postgresql/9.6/main/pg_log
+find-file /sudo:root@localhost:/var/lib/postgresql/9.6/main/pg_log/postgresql-2017-04-06_.log
+
+*** Delete logs whose modification is older than the given time string
+with user postgres in $PGDATA/pg_log
+
+find -not -newermt "2017-04-05 20:00" -delete
+
+to see which files are going to be deleted without run -delete first
+find -not -newermt "2017-04-05 20:00" 
+
+
+** Config file
+
+find-file /etc/postgresql/9.6/main/postgresql.conf
+
+** run a tpc-ds sql script with psql
+another shell:
+su postgresql
+psql -f ./Projects/env/queryperformance20170717/v2.4.0/query/query_0.sql -d tpcdsgb
+
+** Useful functions of postgresql
+
+find out the file path of the relation with the specified OID or name:
+select pg_relation_filepath('store_sales');
+
+** Generate
+*** all queries:
+in Directory: /home/sylver/Projects/env/queryperformance20170310/v2.4.0/tools/
+execute ./genallquery
+
+*** certain query type:
+for example generate 40 queries
+in Directory: /home/sylver/Projects/env/queryperformance20170310/v2.4.0/tools/
+./dsqgen -template query16.tpl -directory ../query_templates -dialect postgres -scale 1 -output_dir ../query/type_16 -stream 40
+
+** Changing names of queries:
+in Directory: /home/sylver/Projects/queryperfomance20170310/v2.4.0/query/
+execute ./naming
+
+** Add users, each establishing a connection to PG
+*** Add a new group 
+sudo addgroup querytype
+
+sudo useradd qtype* -M -g 1001 -p 111111 -s /bin/bash
+
+* Changes 
+changes:
+psudo visudo
+add a line at last
+
+sylver ALL = NOPASSWD: /bin/ls, /sbin/ls, /etc/init.d/postgresql
+
+commnet: means allow user "sylver" to sudo ls without being prompted for password
+
+Alt-Shift-! sudo ls -l /var/lib/postgresql/9.6/main/
+
+
+
+* Ubuntu 
+** Bash
+Ctrl + Alt + t: open new terminal
+Ctrl + Shift + t: open new terminal tab
+Alt + ${tab_number}: switch tab in one terminal
+Ctrl + Shift + V: paste
+Ctrl + Shift + w: close a terminal tab
+Ctrl + Shift + q: close the entire terminal including all tabs
+** Java
+find-file /sudo:localhost:/etc/environment 
+add
+JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-amd64"
+
+~/eclipse/java-neon/eclipse/eclipse
+
+* eamcs
+** ein
+disable auto indent:
+electric-indent-mode
