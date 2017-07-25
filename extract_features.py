@@ -7,10 +7,14 @@ import flatdict
 
 # RAW_FILE = 'log/try_json'
 RAW_FILE = 'res/8144_2'
-DIR_NAME = '/home/sylver/Projects/env/queryperformance20170717/res/'
+DIR_NAME = '/home/sylver/Projects/env/queryperformance20170717/'
+DIR_LOG = DIR_NAME + 'explain/'
+DIR_RES = DIR_NAME + 'res/'
 OUT_NAME = '/home/sylver/Projects/env/queryperformance20170717/'
 # Initialze logger
 LOG_FILENAME = 'extract_log'
+CORRES = [(29573, 17), (29576, 13), (29596, 72),
+          (29598, 18), (29602, 9), (29603, 87)]
 
 logger = logging.getLogger('__name__')
 logger.setLevel(logging.DEBUG)
@@ -33,58 +37,103 @@ def extract_single(d_origin, d, flat_data):
                 item[in_key[pos:]] = in_value
         d[out_value].append(item)
 
-    # pprint(d)
-
 
 def main():
-
-    logs = [name for name in os.listdir(DIR_NAME)
-            if (os.path.isfile(os.path.join(DIR_NAME, name)))]
-    logs.sort()
-    print(logs)
     d_features = dict()
-    # with open(RAW_FILE, 'r') as f:
-    for log in logs:
-        print('extracting log file %s now!' % log)
-        logger.info('extracting log file %s now!' % log)
-        with open(os.path.join(DIR_NAME, log), 'r') as f:
-            data = json.load(f)
+    d_features['input'] = []
+    d_features['output'] = []
 
-        # decide it's input feature or output feature
-        if (len(data) == 1):
-            d_features[log]['Run Time'] = data['Run Time']
-            continue
+    for (explain, types) in CORRES:
+        dir_log = os.path.join(DIR_LOG, str(explain))
+        reses = [name for name in os.listdir(DIR_RES)
+                 if name.find('_'+str(types)) > 0]
+        assert len(reses) == 1
+        dir_res = os.path.join(DIR_RES, reses[0])
 
-        flat_data = flatdict.FlatDict(data)
-        d_origin = dict()
-        d = defaultdict(list)
-        extract_single(d_origin, d, flat_data)
+        logger.info('-----now the dir_log is %s-----\n' % dir_log)
+        logger.info('-----now the dir_res is %s-----\n' % dir_res)
+        print('-----now the dir_log is %s-----\n' % dir_log)
+        print('-----now the dir_res is %s-----\n' % dir_res)
 
-        d_feature = dict()
-        for (key, value) in d.items():
-            feature = dict()
-            feature['rows'] = 0
-            feature['cost'] = 0
-            for item in value:
-                feature['rows'] += item['Plan Rows']
-                feature['cost'] += item['Total Cost'] - item['Startup Cost']
+        logs = [name for name in os.listdir(dir_log)]
+        # logs.sort(key=lambda x: (int(x.split('_')[0]), int(x.split('_')[-1])))
+        logs.sort(key=lambda x: int(x.split('_')[-1]))
 
-            d_feature[key] = feature
+        reses = [name for name in os.listdir(dir_res)]
+        reses.sort(key=lambda x: int(x.split('_')[0]))
+        assert len(logs) == 2 * len(reses)
+        plans = logs[::2]
+        facts = logs[1::2]
 
-        d_feature['Timestamp'] = flat_data['Timestamp']
-        d_feature['Application Name'] = flat_data['Application Name']
-        d_feature['Process Id'] = flat_data['Process Id']
-        d_feature['Username'] = flat_data['Username']
-        d_feature['Session Id'] = flat_data['Session Id']
-        d_feature['Session line'] = flat_data['Session line']
-        d_feature['Duration'] = flat_data['Duration']
+        paires = zip(plans, facts, reses)
+        for (plan, fact, res) in paires:
 
-        key = d_feature['Process Id'] + '_' + d_feature['Session Id'] + '_' + d_feature['Session line']
-        d_features[key] = d_feature
+            logger.info('----------now the plan is %s-----\n' % plan)
+            logger.info('----------now the fact is %s-----\n' % fact)
+            logger.info('----------now the res is %s-----\n' % res)
+            print('----------now the plan is %s-----\n' % plan)
+            print('----------now the fact is %s-----\n' % fact)
+            print('----------now the res is %s-----\n' % res)
+            input_feature = dict()
+            output_feature = dict()
 
-    # return d_features
-    # pprint(d_features)
-    # need to be test
+            with open(os.path.join(dir_log, plan), 'r') as f_plan:
+                data_plan = json.load(f_plan)
+                flat_data = flatdict.FlatDict(data_plan)
+                d_origin = dict()
+                d = defaultdict(list)
+                extract_single(d_origin, d, flat_data)
+
+                for (key, value) in d.items():
+                    feature = dict()
+                    feature['rows'] = 0
+                    feature['cost'] = 0
+                    for item in value:
+                        feature['rows'] += item['Plan Rows']
+                        feature['cost'] += item['Total Cost'] - item['Startup Cost']
+
+                    input_feature[key] = feature
+
+                input_feature['_id'] = flat_data['_id']
+                input_feature['timestamp'] = flat_data['timestamp']
+                input_feature['app_name'] = flat_data['app_name']
+                input_feature['process_id'] = flat_data['process_id']
+                input_feature['username'] = flat_data['username']
+                input_feature['session_id'] = flat_data['session_id']
+                input_feature['session_line'] = flat_data['session_line']
+                input_feature['duration'] = flat_data['duration']
+
+            with open(os.path.join(dir_log, fact), 'r') as f_fact:
+                data_fact = json.load(f_fact)
+                output_feature['_id'] = data_fact['_id']
+                output_feature['runtime'] = data_fact['runtime']
+
+            with open(os.path.join(dir_res, res), 'r') as f_res:
+                data_res = json.load(f_res)
+                input_feature['script'] = data_res['Script Name']
+                input_feature['query_type'] = data_res['Query Type']
+                input_feature['cpu_user'] = data_res['cpu user']
+                input_feature['cpu_system'] = data_res['cpu system']
+                input_feature['cpu_idle'] = data_res['cpu idle']
+                input_feature['cpu_iowait'] = data_res['cpu iowait']
+                input_feature['cpu_irq'] = data_res['cpu irq']
+                input_feature['cpu_softirq'] = data_res['cpu softirq']
+                input_feature['mem_used'] = data_res['mem used']
+                input_feature['mem_free'] = data_res['mem free']
+                input_feature['mem_buffers'] = data_res['mem buffers']
+                input_feature['mem_cached'] = data_res['mem cached']
+
+                output_feature['utime'] = data_res['resource utime']
+                output_feature['stime'] = data_res['resource stime']
+                output_feature['minflt'] = data_res['resource minflt']
+                output_feature['majflt'] = data_res['resource majflt']
+                output_feature['inblock'] = data_res['resource inblock']
+                output_feature['oublock'] = data_res['resource oublock']
+
+            d_features['input'].append(input_feature)
+            d_features['output'].append(output_feature)
+
+    pprint(d_features)
     with open(os.path.join(OUT_NAME, 'features'), 'w') as f:
         json_data = json.dumps(d_features)
         f.write(json_data)

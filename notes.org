@@ -30,7 +30,8 @@ service postgresql restart
 ** Query log
 *** Open logs
 ls -lh /sudo:root@localhost:/var/lib/postgresql/9.6/main/pg_log
-find-file /sudo:root@localhost:/var/lib/postgresql/9.6/main/pg_log/postgresql-2017-04-06_.log
+find-file
+/sudo:root@localhost:/var/lib/postgresql/9.6/main/pg_log/postgresql-2017-04-06_.log
 
 *** Delete logs whose modification is older than the given time string
 with user postgres in $PGDATA/pg_log
@@ -60,9 +61,10 @@ select pg_relation_filepath('store_sales');
 in Directory: /home/sylver/Projects/env/queryperformance20170310/v2.4.0/tools/
 execute ./genallquery
 
-*** certain query type:
+*** certain
+query type:
 for example generate 40 queries
-in Directory: /home/sylver/Projects/env/queryperformance20170310/v2.4.0/tools/
+in Directory: /home/sylver/Projects/env/queryperformance20170717/v2.4.0/tools/
 ./dsqgen -template query16.tpl -directory ../query_templates -dialect postgres -scale 1 -output_dir ../query/type_16 -stream 40
 
 ** Changing names of queries:

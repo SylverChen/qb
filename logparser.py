@@ -1,143 +1,134 @@
 import mmap
 import re
 
+LOG_FILE = './log/postgresql-2017-07-24_230930.log'
 
-LOG_FILE = './log/postgresql-2017-07-23_114301.log'
+plan = re.compile(
+    rb'''
+    (?P<timestamp>(\d){4}\-(\d){2}\-(\d){2}\s(\d){2}:(\d){2}:(\d){2}(\.(\d)+)?)
+    .*\]:\[
+    (?P<app_name>(\w)+)
+    \]:\[
+    (?P<process_id>(\d)+)
+    \]:\[
+    (?P<user_name>sylver)
+    \]:\[
+    (?P<session_id>.*)
+    \]:\[
+    (?P<session_line>(\d)+)
+    .*duration:\s*
+    (?P<duration>(\d)+(\.(\d)+)?)
+    .*plan
+    ''',
+    re.VERBOSE)
+
+end = re.compile(
+    rb'''
+    (?P<timestamp>(\d){4}\-(\d){2}\-(\d){2}\s(\d){2}:(\d){2}:(\d){2}(\.(\d)+)?)
+    ''',
+    re.VERBOSE)
+
+result = re.compile(
+    rb'''
+    (?P<timestamp>(\d){4}\-(\d){2}\-(\d){2}\s(\d){2}:(\d){2}:(\d){2}(\.(\d)+)?)
+    .*\]:\[
+    (?P<app_name>(\w)+)
+    \]:\[
+    (?P<process_id>(\d)+)
+    \]:\[
+    (?P<user_name>sylver)
+    \]:\[
+    (?P<session_id>.*)
+    \]:\[
+    (?P<session_line>(\d)+)
+    .*duration:\s*
+    (?P<runtime>(\d)+(\.(\d)+)?)
+    .*statement
+    .*select
+    # .*[^;]$
+    ''',
+    re.VERBOSE)
 
 
-def log_single(mm, match, header_end, _id):
-    # all fields are of type bytearray
+def log_plan(mm, match, _id):
     timestamp = match.group('timestamp').decode()
     app_name = match.group('app_name').decode()
     process_id = match.group('process_id').decode()
-    user_name = match.group('user_name').decode()
+    username = match.group('user_name').decode()
     session_id = match.group('session_id').decode()
     session_line = match.group('session_line').decode()
     duration = match.group('duration').decode()
 
     res_name = str(_id) + '_' + process_id + '_' + session_line
-    with open('./res/'+res_name, 'wt') as resf:
+    with open('./explain/'+res_name, 'wt') as resf:
         resf.write('{\n')
         resf.write('"' + '_id' + '": ' + '"' + str(_id) + '",\n')
-        resf.write('"' + 'Timestamp' + '": ' + '"' + timestamp + '",\n')
-        resf.write('"' + 'Application Name' + '": ' + '"' + app_name + '",\n')
-        resf.write('"' + 'Process Id' + '": ' + '"' + process_id + '",\n')
-        resf.write('"' + 'Username' + '": ' + '"' + user_name + '",\n')
-        resf.write('"' + 'Session Id' + '": ' + '"' + session_id + '",\n')
-        resf.write('"' + 'Session line' + '": ' + '"' + session_line + '",\n')
-        resf.write('"' + 'Duration' + '": ' + '"' + duration + '",\n')
+        resf.write('"' + 'timestamp' + '": ' + '"' + timestamp + '",\n')
+        resf.write('"' + 'app_name' + '": ' + '"' + app_name + '",\n')
+        resf.write('"' + 'process_id' + '": ' + '"' + process_id + '",\n')
+        resf.write('"' + 'username' + '": ' + '"' + username + '",\n')
+        resf.write('"' + 'session_id' + '": ' + '"' + session_id + '",\n')
+        resf.write('"' + 'session_line' + '": ' + '"' + session_line + '",\n')
+        resf.write('"' + 'duration' + '": ' + '"' + duration + '",\n')
 
-        for i in range(3):
-            mm.readline()
+        mm.readline()
+        mm.readline()
 
         while True:
-            # line = mm.readline().decode()
             line = mm.readline()
-            if ('' == line or header_end.search(line)):
+            match_end = re.search(end, line)
+            if (match_end):
                 break
-            # if (header_end.search(line)):
-            #     break
             else:
                 resf.write(line.decode())
+                continue
 
 
-def log_res(mm, match, header_res, _id):
-    # all fields are of type bytearray
+def log_res(mm, match, _id):
     timestamp = match.group('timestamp').decode()
     app_name = match.group('app_name').decode()
     process_id = match.group('process_id').decode()
-    user_name = match.group('user_name').decode()
+    username = match.group('user_name').decode()
     session_id = match.group('session_id').decode()
     session_line = match.group('session_line').decode()
-    duration = match.group('duration').decode()
+    runtime = match.group('runtime').decode()
 
     res_name = str(_id) + '_' + process_id + '_' + session_line
-    with open('./res/'+res_name, 'wt') as resf:
+    with open('./explain/'+res_name, 'wt') as resf:
         resf.write('{\n')
         resf.write('"' + '_id' + '": ' + '"' + str(_id) + '",\n')
-        resf.write('"' + 'Timestamp' + '": ' + '"' + timestamp + '",\n')
-        resf.write('"' + 'Application Name' + '": ' + '"' + app_name + '",\n')
-        resf.write('"' + 'Process Id' + '": ' + '"' + process_id + '",\n')
-        resf.write('"' + 'Username' + '": ' + '"' + user_name + '",\n')
-        resf.write('"' + 'Session Id' + '": ' + '"' + session_id + '",\n')
-        resf.write('"' + 'Session line' + '": ' + '"' + session_line + '",\n')
-        resf.write('"' + 'Duration' + '": ' + '"' + duration + '"\n')
+        resf.write('"' + 'timestamp' + '": ' + '"' + timestamp + '",\n')
+        resf.write('"' + 'app_name' + '": ' + '"' + app_name + '",\n')
+        resf.write('"' + 'process_id' + '": ' + '"' + process_id + '",\n')
+        resf.write('"' + 'username' + '": ' + '"' + username + '",\n')
+        resf.write('"' + 'session_id' + '": ' + '"' + session_id + '",\n')
+        resf.write('"' + 'session_line' + '": ' + '"' + session_line + '",\n')
+        resf.write('"' + 'runtime' + '": ' + '"' + runtime + '"\n')
         resf.write('}\n')
 
 
 def main():
     f = open(LOG_FILE, 'r')
     mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-    header = re.compile(
-        rb'''
-        (?P<timestamp>(\d){4}\-(\d){2}\-(\d){2}\s(\d){2}:(\d){2}:(\d){2}(\.(\d)+)?)
-        \s*CST\]:\[
-        (?P<app_name>(\w)+)
-        \]:\[
-        (?P<process_id>(\d)+)
-        \]:\[
-        # (?P<user_name>(\w)+)
-        (?P<user_name>sylver)
-        \]:\[
-        (?P<session_id>.*)
-        \]:\[
-        (?P<session_line>(\d)+)
-        .*duration:\s*
-        (?P<duration>(\d)+(\.(\d)+)?)
-        .*plan:
-        ''',
-        re.VERBOSE)
+    for (_id, match) in enumerate(re.finditer(result, mm)):
+        print('-----parsing res  %s now-----\n' % match.group(0))
+        s = match.start()
+        mm.seek(s)
+        log_res(mm, match, _id)
 
-    header_end = re.compile(
-        rb'''
-        (?P<timestamp>(\d){4}\-(\d){2}\-(\d){2}\s(\d){2}:(\d){2}:(\d){2}(\.(\d)+)?)
-        \s*CST\]:\[
-        (?P<app_name>(\w)+)
-        \]:\[
-        (?P<process_id>(\d)+)
-        \]:\[
-        (?P<user_name>(\w)+)
-        \]:\[
-        (?P<session_id>.*)
-        \]:\[
-        (?P<session_line>(\d)+)
-        .*duration:\s*
-        (?P<duration>(\d)+(\.(\d)+)?)
-        ''',
-        re.VERBOSE)
+    mm.seek(0)
 
-    header_res = re.compile(
-        rb'''
-        (?P<timestamp>(\d){4}\-(\d){2}\-(\d){2}\s(\d){2}:(\d){2}:(\d){2})
-        \s*CST\]:\[
-        (?P<app_name>(\w)+)
-        \]:\[
-        (?P<process_id>(\d)+)
-        \]:\[
-        (?P<user_name>sylver)
-        \]:\[
-        (?P<session_id>.*)
-        \]:\[
-        (?P<session_line>(\d)+)
-        .*duration:\s*
-        (?P<duration>(\d)+(\.(\d)+)?)
-        .*statement:
-        ''',
-        re.VERBOSE)
-
-    # record explain
-    for (_id, match) in enumerate(re.finditer(header, mm)):
+    for (_id, match) in enumerate(re.finditer(plan, mm)):
         print('-----parsing %s now-----\n' % match.group(0))
         s = match.start()
         mm.seek(s)
-        log_single(mm, match, header_end, _id)
+        log_plan(mm, match, _id)
 
-    # record run time
-    for (_id, match) in enumerate(re.finditer(header_res, mm)):
-        print('-----parsing %s now-----\n' % match.group(0))
-        s = match.start()
-        mm.seek(s)
-        log_res(mm, match, header_end, _id)
+    # print('before %d \n' % mm.tell())
+    # mm.seek(0)
+    # print('after %d \n' % mm.tell())
+    # match = re.search(result, mm)
+    # print(match)
 
 
 if __name__ == "__main__":
