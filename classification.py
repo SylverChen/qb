@@ -8,15 +8,17 @@ DIR_RES = DIR_CURRENT + 'res/'
 
 
 def mv_log():
-    pattern = re.compile(r'_(?P<pattern>(\d)+)_')
+    # pattern = re.compile(r'_(?P<pattern>(\d)+)_')
     logs = [name for name in os.listdir(DIR_LOG)
             if (os.path.isfile(os.path.join(DIR_LOG, name)))]
     logs.sort()
 
     set_logs = set()
     for log in logs:
-        match = re.search(pattern, log)
-        set_logs.add(match.group('pattern'))
+        parts = log.split('_')
+        set_logs.add(parts[2])
+        # match = re.search(pattern, log)
+        # set_logs.add(match.group('pattern'))
 
     for item in set_logs:
         subprocess.run(['mkdir', DIR_LOG + item])
@@ -27,7 +29,9 @@ def mv_log():
         logs = [name for name in os.listdir(DIR_LOG)
                 if (os.path.isfile(os.path.join(DIR_LOG, name)))]
         for log in logs:
-            if log.find('_' + _dir + '_') > 0:
+            parts = log.split('_')
+            if parts[2] == _dir:
+            # if log.find('_' + _dir + '_') > 0:
                 # print(os.path.join(DIR_LOG, log))
                 # print(os.path.join(DIR_LOG, _dir))
                 subprocess.run(['mv', os.path.join(DIR_LOG, log),
@@ -37,15 +41,17 @@ def mv_log():
 
 
 def mv_res():
-    pattern = re.compile(r'(?P<pattern>(\d)+_type_(\d)+)')
+    # pattern = re.compile(r'(?P<pattern>(\d)+_type_(\d)+)')
     reses = [name for name in os.listdir(DIR_RES)
              if (os.path.isfile(os.path.join(DIR_RES, name)))]
     reses.sort()
 
     set_reses = set()
     for res in reses:
-        match = re.search(pattern, res)
-        set_reses.add(match.group('pattern'))
+        parts = res.split('_')
+        set_reses.add(parts[2])
+        # match = re.search(pattern, res)
+        # set_reses.add(match.group('pattern'))
 
     for item in set_reses:
         subprocess.run(['mkdir', DIR_RES + item])
@@ -57,7 +63,9 @@ def mv_res():
         reses = [name for name in os.listdir(DIR_RES)
                  if (os.path.isfile(os.path.join(DIR_RES, name)))]
         for res in reses:
-            if res.find(_dir) > 0:
+            parts = res.split('_')
+            if parts[2] == _dir:
+            # if res.find(_dir) > 0:
                 # print(os.path.join(DIR_RES, res))
                 # print(os.path.join(DIR_RES, _dir))
                 subprocess.run(['mv', os.path.join(DIR_RES, res),
@@ -73,3 +81,63 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+# def mv_log():
+#     pattern = re.compile(r'_(?P<pattern>(\d)+)_')
+#     logs = [name for name in os.listdir(DIR_LOG)
+#             if (os.path.isfile(os.path.join(DIR_LOG, name)))]
+#     logs.sort()
+
+#     set_logs = set()
+#     for log in logs:
+#         match = re.search(pattern, log)
+#         set_logs.add(match.group('pattern'))
+
+#     for item in set_logs:
+#         subprocess.run(['mkdir', DIR_LOG + item])
+
+#     dir_process = [name for name in os.listdir(DIR_LOG)
+#                    if (os.path.isdir(os.path.join(DIR_LOG, name)))]
+#     for _dir in dir_process:
+#         logs = [name for name in os.listdir(DIR_LOG)
+#                 if (os.path.isfile(os.path.join(DIR_LOG, name)))]
+#         for log in logs:
+#             if log.find('_' + _dir + '_') > 0:
+#                 # print(os.path.join(DIR_LOG, log))
+#                 # print(os.path.join(DIR_LOG, _dir))
+#                 subprocess.run(['mv', os.path.join(DIR_LOG, log),
+#                                 os.path.join(DIR_LOG, _dir)])
+#             else:
+#                 continue
+
+
+# def mv_res():
+#     pattern = re.compile(r'(?P<pattern>(\d)+_type_(\d)+)')
+#     reses = [name for name in os.listdir(DIR_RES)
+#              if (os.path.isfile(os.path.join(DIR_RES, name)))]
+#     reses.sort()
+
+#     set_reses = set()
+#     for res in reses:
+#         match = re.search(pattern, res)
+#         set_reses.add(match.group('pattern'))
+
+#     for item in set_reses:
+#         subprocess.run(['mkdir', DIR_RES + item])
+
+#     dir_name = [name for name in os.listdir(DIR_RES)
+#                 if (os.path.isdir(os.path.join(DIR_RES, name)))]
+
+#     for _dir in dir_name:
+#         reses = [name for name in os.listdir(DIR_RES)
+#                  if (os.path.isfile(os.path.join(DIR_RES, name)))]
+#         for res in reses:
+#             if res.find(_dir) > 0:
+#                 # print(os.path.join(DIR_RES, res))
+#                 # print(os.path.join(DIR_RES, _dir))
+#                 subprocess.run(['mv', os.path.join(DIR_RES, res),
+#                                 os.path.join(DIR_RES, _dir)])
+#             else:
+#                 continue

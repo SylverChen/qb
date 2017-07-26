@@ -1,7 +1,7 @@
 import mmap
 import re
 
-LOG_FILE = './log/postgresql-2017-07-24_230930.log'
+LOG_FILE = './log/postgresql-2017-07-25_223820.log'
 
 plan = re.compile(
     rb'''
@@ -10,8 +10,8 @@ plan = re.compile(
     (?P<app_name>(\w)+)
     \]:\[
     (?P<process_id>(\d)+)
-    \]:\[
-    (?P<user_name>sylver)
+    \]:\[user
+    (?P<user_id>(\d)+)
     \]:\[
     (?P<session_id>.*)
     \]:\[
@@ -35,8 +35,8 @@ result = re.compile(
     (?P<app_name>(\w)+)
     \]:\[
     (?P<process_id>(\d)+)
-    \]:\[
-    (?P<user_name>sylver)
+    \]:\[user
+    (?P<user_id>(\d)+)
     \]:\[
     (?P<session_id>.*)
     \]:\[
@@ -54,19 +54,20 @@ def log_plan(mm, match, _id):
     timestamp = match.group('timestamp').decode()
     app_name = match.group('app_name').decode()
     process_id = match.group('process_id').decode()
-    username = match.group('user_name').decode()
+    user_id = match.group('user_id').decode()
     session_id = match.group('session_id').decode()
     session_line = match.group('session_line').decode()
     duration = match.group('duration').decode()
 
-    res_name = str(_id) + '_' + process_id + '_' + session_line
+    res_name = str(_id) + '_' + process_id + '_' + \
+        user_id + '_' + session_line
     with open('./explain/'+res_name, 'wt') as resf:
         resf.write('{\n')
         resf.write('"' + '_id' + '": ' + '"' + str(_id) + '",\n')
         resf.write('"' + 'timestamp' + '": ' + '"' + timestamp + '",\n')
         resf.write('"' + 'app_name' + '": ' + '"' + app_name + '",\n')
         resf.write('"' + 'process_id' + '": ' + '"' + process_id + '",\n')
-        resf.write('"' + 'username' + '": ' + '"' + username + '",\n')
+        resf.write('"' + 'user_id' + '": ' + '"' + user_id + '",\n')
         resf.write('"' + 'session_id' + '": ' + '"' + session_id + '",\n')
         resf.write('"' + 'session_line' + '": ' + '"' + session_line + '",\n')
         resf.write('"' + 'duration' + '": ' + '"' + duration + '",\n')
@@ -88,19 +89,20 @@ def log_res(mm, match, _id):
     timestamp = match.group('timestamp').decode()
     app_name = match.group('app_name').decode()
     process_id = match.group('process_id').decode()
-    username = match.group('user_name').decode()
+    user_id = match.group('user_id').decode()
     session_id = match.group('session_id').decode()
     session_line = match.group('session_line').decode()
     runtime = match.group('runtime').decode()
 
-    res_name = str(_id) + '_' + process_id + '_' + session_line
+    res_name = str(_id) + '_' + process_id + '_' + \
+        user_id + '_' + session_line
     with open('./explain/'+res_name, 'wt') as resf:
         resf.write('{\n')
         resf.write('"' + '_id' + '": ' + '"' + str(_id) + '",\n')
         resf.write('"' + 'timestamp' + '": ' + '"' + timestamp + '",\n')
         resf.write('"' + 'app_name' + '": ' + '"' + app_name + '",\n')
         resf.write('"' + 'process_id' + '": ' + '"' + process_id + '",\n')
-        resf.write('"' + 'username' + '": ' + '"' + username + '",\n')
+        resf.write('"' + 'user_id' + '": ' + '"' + user_id + '",\n')
         resf.write('"' + 'session_id' + '": ' + '"' + session_id + '",\n')
         resf.write('"' + 'session_line' + '": ' + '"' + session_line + '",\n')
         resf.write('"' + 'runtime' + '": ' + '"' + runtime + '"\n')

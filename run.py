@@ -4,6 +4,9 @@ import os
 import multiprocessing
 import pexpect
 import psutil
+import time
+import numpy as np
+import subprocess
 
 DIR_LOG = '/home/sylver/Projects/env/queryperformance20170717/log/'
 DIR_NAME = '/home/sylver/Projects/env/queryperformance20170717/v2.4.0/query/'
@@ -34,15 +37,17 @@ def init_logger(_type):
     return logger
 
 
-def worker(_type):
-    logger = init_logger(_type)
+def worker(_id, _type, user_id):
+    logger = init_logger(str(_id)+'_'+_type+'_'+str(user_id))
     p = multiprocessing.current_process()
-    scripts = [name for name in os.listdir(DIR_NAME + _type)]
-    child = pexpect.spawn('psql --username=sylver --dbname=tpcdsgb',
+    scripts = [name for name in os.listdir(DIR_NAME+_type+'/'+str(user_id))]
+    child = pexpect.spawn('psql --username=user' +
+                          str(user_id)+' --dbname=tpcdsgb',
                           maxread=1000000)
-    for (_id, script) in enumerate(scripts):
-        print('----%s running in Process %s now!-----' % (script, p.name))
-        logger.info('[%d]:[%s]:[%d]:[%s]' % (_id, script, child.pid, p.name))
+    for (script_id, script) in enumerate(scripts):
+        print('----%s running by User %d now!-----' % (script, user_id))
+        logger.info('[%d]:[%s]:[%d]:[%s]:[%d]' %
+                    (script_id, script, _id, _type, user_id))
 
         try:
             cpu_util = psutil.cpu_times_percent()
@@ -63,7 +68,8 @@ def worker(_type):
             print(child.before)
             print(DIR_NAME + _type + script)
             child.expect('tpcdsgb=#')
-            child.sendline('\i ' + DIR_NAME + _type + '/' + script)
+            child.sendline('\i ' + DIR_NAME + _type + '/' +
+                           str(user_id) + '/' + script)
 
         except pexpect.TIMEOUT as e:
             logger.error('failed with %s\n' % str(child))
@@ -88,18 +94,39 @@ def worker(_type):
     print('-----Process %s finished-----\n' % p.name)
 
 
+def start_works(_id, _type, row):
+    start = sum(row[:_id])
+    end = sum(row[:_id+1])
+
+    for user_id in range(start, end):
+        p = multiprocessing.Process(
+            target=worker,
+            args=(_id, _type, user_id),
+            # args=(_type, logger,),
+            name=user_id)
+        p.daemon = False
+        # jobs.append(p)
+        p.start()
+
+
 if __name__ == "__main__":
+    subprocess.run(['rm', '-r', 'log'])
+    subprocess.run(['rm', '-r', 'explain'])
+    subprocess.run(['rm', '-r', 'res'])
+    subprocess.run(['mkdir', 'log'])
+    subprocess.run(['mkdir', 'explain'])
+    subprocess.run(['mkdir', 'res'])
+
+    samples = np.loadtxt('lhs', dtype='int')
+    row = samples[0]
     types = [name for name in os.listdir(DIR_NAME)
              if (os.path.isdir(os.path.join(DIR_NAME, name))
                  and name.startswith('type_'))]
     types.sort()
-    jobs = []
-    for _type in types:
-        p = multiprocessing.Process(
-            target=worker,
-            args=(_type,),
-            # args=(_type, logger,),
-            name=_type)
-        p.daemon = False
-        jobs.append(p)
-        p.start()
+
+    # jobs = []
+
+    for (_id, pair) in enumerate(zip(types, row)):
+        start_works(_id, pair[0], row)
+
+    # time.sleep(120)

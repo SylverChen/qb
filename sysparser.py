@@ -3,17 +3,22 @@ import re
 import os
 
 DIR_LOG = './log/'
+
+# match this line:
+# 2017-07-25 19:40:09,103 - 0_type_13_0 - INFO - [0]:[query_4.sql]:[0]:[type_13]:[0]
 process = re.compile(
     rb'''
     (?P<timestamp>(\d){4}\-(\d){2}\-(\d){2}\s(\d){2}:(\d){2}:(\d){2}(\,(\d)+)?)
     .*\[
     (?P<_id>(\d)+)
     \]:\[
-    (?P<script>.*sql)
+    (?P<script_name>.*sql)
     \]:\[
-    (?P<process_id>(\w)+)
+    (?P<type_id>(\d)+)
     \]:\[
-    (?P<type>type_(\d)+)
+    (?P<type_name>type_(\d)+)
+    \]:\[
+    (?P<user_id>(\d)+)
     ''',
     re.VERBOSE)
 
@@ -103,18 +108,25 @@ oublock = re.compile(
 
 def log_single(list_res, mm, match, _id):
     _number = match.group('_id').decode()
-    script = match.group('script').decode()
-    process_id = match.group('process_id').decode()
-    _type = match.group('type').decode()
+    type_id = match.group('type_id').decode()
+    user_id = match.group('user_id').decode()
+    script_name = match.group('script_name').decode()
+    # process_id = match.group('process_id').decode()
+    # _type = match.group('type').decode()
 
-    res_name = str(_id) + '_' + process_id + '_' + _type + '_' + script[:-4]
+    res_name = str(_id) + '_' + str(type_id) + \
+        '_' + str(user_id) + '_' + script_name[:-4]
+
     with open('./res/'+res_name, 'wt') as resf:
         resf.write('{\n')
         resf.write('"' + '_id' + '": ' + '"' + str(_number) + '",\n')
+        resf.write('"' + 'type_id' + '": ' + '"' + type_id + '",\n')
+        resf.write('"' + 'user_id' + '": ' + '"' + user_id + '",\n')
+        resf.write('"' + 'script_name' + '": ' + '"' + script_name + '",\n')
         # resf.write('"' + 'Timestamp' + '": ' + '"' + timestamp + '",\n')
-        resf.write('"' + 'Process Id' + '": ' + '"' + process_id + '",\n')
-        resf.write('"' + 'Script Name' + '": ' + '"' + script + '",\n')
-        resf.write('"' + 'Query Type' + '": ' + '"' + _type + '",\n')
+        # resf.write('"' + 'Process Id' + '": ' + '"' + process_id + '",\n')
+        # resf.write('"' + 'Script Name' + '": ' + '"' + script + '",\n')
+        # resf.write('"' + 'Query Type' + '": ' + '"' + _type + '",\n')
 
         cpu_util_match = re.search(cpu_util, mm)
         cpu_user = cpu_util_match.group('user').decode()
@@ -212,7 +224,8 @@ def push_resource(list_res, mm, match, _id_):
 def main():
     types = [name for name in os.listdir(DIR_LOG)
              if (os.path.isfile(os.path.join(DIR_LOG, name))
-                 and name.startswith('type_'))]
+                 and name.find('_type_') > 0)]
+                 # name.startswith('type_'))]
     types.sort()
 
     for _type in types:
