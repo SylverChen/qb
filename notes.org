@@ -7,7 +7,16 @@ cd tools/
 ./dsqgen -template query6.tpl -directory ../query_templates -dialect postgres -scale 1 -output_dir ../query
 mv ../query/query_0.sql ../query/query_6.sql
 find-file ../query/query_6.sql
-
+** Generate data
+in tool Directory
+dsdgen -scale 20 -dir ../tmp
+cd ../tmp
+with shell: delete '|' at end of each line, otherwise when importing data to Pg,
+pg throws error for one more column
+sed -i.tmp 's/|$//' *.dat
+** Generate query types
+in tool Directory
+queriesgen.py
       
 * Setting of sql mode
 in .sql file
@@ -26,7 +35,7 @@ password: 111111
 restart pg server:
 service postgresql restart
 
-
+n
 ** Query log
 *** Open logs
 ls -lh /sudo:root@localhost:/var/lib/postgresql/9.6/main/pg_log
@@ -90,6 +99,7 @@ Alt-Shift-! sudo ls -l /var/lib/postgresql/9.6/main/
 
 
 
+
 * Ubuntu 
 ** Bash
 Ctrl + Alt + t: open new terminal
@@ -104,7 +114,11 @@ add
 JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-amd64"
 
 ~/eclipse/java-neon/eclipse/eclipse
-
+** others
+**** take a screenshot
+application Screenshot
+**** switch between f1-f12 enable and disable
+Fn + Esc
 * eamcs
 ** ein
 disable auto indent:
@@ -115,3 +129,27 @@ notice
 generate queries must 
 cd ./v2.4.0/tools
 python queriesgen.py
+
+* Git
+git add -u
+
+
+[3:14]
+3 no
+4 ok
+5 ok
+6 ok
+7 no
+8 no
+9 ok
+10 no
+11 no
+12 ok
+13 ok
+
+
+backup/postgresql-los/
+1_log
+[0, 1, 2]
+2_log
+[4, 5, 6, 9, 12, 13]
